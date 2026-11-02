@@ -1,0 +1,26 @@
+{
+  "name": "pc-grapist",
+  "version": "0.1.0",
+  "description": "PC GRAPIST - prototype local gratuit de diagnostic preparatoire PC gaming",
+  "author": "Tiloust",
+  "license": "MIT",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win portable --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "io.github.tiloust.pcgrapist",
+    "productName": "PC GRAPIST",
+    "directories": {"output": "dist"},
+    "files": ["index.html", "desktop/main.cjs", "package.json", "LICENSE"],
+    "asar": true,
+    "win": {"target": ["portable"], "signAndEditExecutable": false},
+    "artifactName": "PC-GRAPIST-${version}-${arch}.${ext}"
+  }
+}

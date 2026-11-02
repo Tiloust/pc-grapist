@@ -1,0 +1,7 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {"label": "PC GRAPIST : lancer", "type": "shell", "command": ".\\LANCER.bat", "problemMatcher": []},
+    {"label": "PC GRAPIST : creer EXE Windows", "type": "shell", "command": ".\\CREER-EXE.bat", "problemMatcher": []}
+  ]
+}
