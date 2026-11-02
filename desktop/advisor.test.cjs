@@ -1,0 +1,10 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {advise}=require('./advisor.js');
+const context={genre:'aaa',problem:'fps',inGame:true,capped:false,target:120,observed:60,budget:300};
+const samples=Array.from({length:12},(_,i)=>({at:i*3000,ramUsedPercent:40,threadMaxPercent:30,gpus:[{index:'0',name:'Test GPU',loadPercent:99}]}));
+test('aucun achat sans session suffisante',()=>assert(!advise(context,[]).some(x=>x.title.includes('candidate'))));
+test('piste GPU seulement sous conditions',()=>assert(advise(context,samples).some(x=>x.title.includes('candidate'))));
+test('pas de piste GPU avec limite FPS',()=>assert(!advise({...context,capped:true},samples).some(x=>x.title.includes('candidate'))));
+test('pas de recommandation GPU hors jeu',()=>assert(!advise({...context,inGame:false},samples).some(x=>x.title.includes('candidate'))));
+test('valeurs absentes ne deviennent pas une saturation',()=>assert(!advise(context,samples.map(s=>({...s,gpus:[]}))).some(x=>x.title.includes('candidate'))));
