@@ -18,7 +18,7 @@
     "appId": "io.github.tiloust.pcgrapist",
     "productName": "PC GRAPIST",
     "directories": {"output": "dist"},
-    "files": ["index.html", "desktop/main.cjs", "package.json", "LICENSE"],
+    "files": ["index.html", "desktop/**/*", "package.json", "LICENSE"],
     "asar": true,
     "win": {"target": ["portable"], "signAndEditExecutable": false},
     "artifactName": "PC-GRAPIST-${version}-${arch}.${ext}"
