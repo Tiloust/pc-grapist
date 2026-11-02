@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PC GRAPIST — diagnostic préparatoire</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#11141c;color:#e5eaf5}*{box-sizing:border-box}body{max-width:1050px;margin:auto;padding:28px}h1{letter-spacing:-2px;font-size:clamp(2rem,6vw,3.7rem);margin-bottom:8px}p{line-height:1.6;color:#bdc7da}.tag{color:#8ee8ca}section,fieldset{border:1px solid #344158;border-radius:18px;padding:22px;margin:20px 0;background:#191f2c}legend{padding:0 8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}label{display:block;font-size:.95rem}input,select,textarea{width:100%;margin-top:8px;border:1px solid #53627b;border-radius:9px;padding:12px;background:#101621;color:#fff;font:inherit}textarea{min-height:90px}button{padding:12px 18px;border:1px solid #6b8caa;border-radius:9px;background:#283e53;color:white;font:inherit;cursor:pointer}button[type=submit]{background:#9ceacb;color:#10241e;border:0}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #9ceacb;outline-offset:3px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}li{line-height:1.65;margin:9px 0}#status{min-height:1.5em}small{color:#bdc7da}h2{font-size:1.35rem}
+</style>
+<header><span class="tag">LOCAL · GRATUIT · OPEN SOURCE</span><h1>PC GRAPIST</h1><p>Prépare ton diagnostic et ton prochain upgrade, sans fausse promesse de FPS.</p></header>
+<main><form id="config">
+<fieldset><legend>1. Ta configuration</legend><div class="grid">
+<label>Type de PC<select name="type"><option value="desktop">PC fixe</option><option value="laptop">Portable</option></select></label>
+<label>Processeur *<input name="cpu" required maxlength="150" placeholder="Modèle exact"></label>
+<label>Carte graphique *<input name="gpu" required maxlength="150" placeholder="Modèle exact"></label>
+<label>RAM (Go)<input name="ram" type="number" min="1" max="4096" step="1"></label>
+<label>Carte mère<input name="board" maxlength="150" placeholder="Inconnue si non renseignée"></label>
+<label>Alimentation<input name="psu" maxlength="150" placeholder="Modèle et puissance si connus"></label>
+<label>Stockage du jeu<select name="storage"><option value="unknown">Je ne sais pas</option><option value="ssd">SSD</option><option value="hdd">Disque dur</option></select></label>
+</div></fieldset>
+<fieldset><legend>2. Tes jeux et ton objectif</legend><div class="grid">
+<label>Jeux concernés *<input name="games" required maxlength="300" placeholder="Liste des jeux"></label>
+<label>Résolution<select name="resolution"><option>1920 × 1080</option><option>2560 × 1440</option><option>3840 × 2160</option><option>Autre</option></select></label>
+<label>FPS visés *<input name="target" type="number" min="1" max="1000" required value="60"></label>
+<label>FPS observés (facultatif)<input name="observed" type="number" min="0" max="2000"></label>
+<label>Budget maximal (€) *<input name="budget" type="number" min="0" max="100000" step="0.01" required value="0"></label>
+<label>Problème principal<select name="symptom"><option value="upgrade">Préparer une amélioration</option><option value="stutter">Saccades</option><option value="fps">FPS insuffisants</option><option value="heat">Chauffe suspectée</option></select></label>
+</div><label>Réglages et contexte<textarea name="notes" maxlength="2000" placeholder="Qualité graphique, ray tracing, upscaling, scène testée, limite de FPS…"></textarea></label></fieldset>
+<small>* Champs obligatoires. Saisie manuelle uniquement. Aucun envoi de données.</small>
+<div class="actions"><button type="submit">Préparer mon rapport</button><button type="button" id="save">Sauvegarder localement</button><button type="button" id="export">Exporter JSON</button><button type="button" id="clear">Effacer</button></div>
+</form><p id="status" role="status"></p><section id="report" hidden aria-labelledby="report-title"><h2 id="report-title">Ton plan de vérification</h2><p id="summary"></p><ol id="checks"></ol><p>Ce rapport n'identifie pas une panne et ne valide aucun achat. Aucun benchmark ou relevé matériel n'a été analysé.</p></section></main>
+<script>
+'use strict';
+const form=document.querySelector('#config'),status=document.querySelector('#status'),report=document.querySelector('#report'),key='pc-grapist-v1';
+const data=()=>Object.fromEntries(new FormData(form));
+const say=text=>{status.textContent=text;};
+function render(d){
+ document.querySelector('#summary').textContent=`Objectif : ${d.target} FPS en ${d.resolution}, budget maximal ${d.budget} €. Jeux : ${d.games}. Ces valeurs sont déclaratives.`;
+ const checks=['Avant tout achat, relever les performances dans une scène reproductible et noter les réglages exacts. Les seuls noms du CPU et du GPU ne suffisent pas pour conclure.'];
+ if(d.observed!==''&&Number(d.observed)<Number(d.target))checks.push('Les FPS déclarés sont inférieurs à ton objectif. Ce constat ne permet pas encore d’attribuer la limitation à un composant.');
+ if(d.observed==='')checks.push('Mesure manquante : relever les FPS observés et la régularité des temps de rendu.');
+ if(d.symptom==='stutter')checks.push('Pour documenter les saccades, prévoir une capture des temps de rendu : une moyenne FPS seule ne décrit pas le problème.');
+ if(d.symptom==='heat')checks.push('Chauffe suspectée : fournir des températures et fréquences relevées en charge, avec les modèles exacts, avant toute interprétation.');
+ if(!d.notes.trim())checks.push('Préciser les réglages graphiques, la limite de FPS éventuelle, l’upscaling et la scène testée.');
+ if(!d.ram)checks.push('Renseigner la quantité de RAM ; aucune conclusion sur la mémoire n’est possible ici.');
+ if(d.storage==='unknown')checks.push('Identifier le support sur lequel le jeu est installé.');
+ if(d.type==='laptop')checks.push('Portable : vérifier la documentation du modèle exact avant d’envisager un remplacement de composant. Aucune évolutivité n’est présumée.');
+ else{if(!d.board.trim())checks.push('Carte mère inconnue : compatibilité processeur et mémoire non vérifiée.');if(!d.psu.trim())checks.push('Alimentation inconnue : ne pas valider de changement de carte graphique avant vérification du modèle, des connecteurs et des exigences du fabricant.');checks.push('Avant de choisir un composant, vérifier aussi les dimensions du boîtier et les exigences du fabricant.');}
+ checks.push(Number(d.budget)===0?'Budget nul : ce prototype ne propose aucun achat. Documenter d’abord la situation.':'Aucun composant recommandé automatiquement dans cette version : catalogue sourcé et données comparatives encore absents.');
+ document.querySelector('#checks').replaceChildren(...checks.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+ report.hidden=false;
+}
+form.addEventListener('submit',event=>{event.preventDefault();render(data());say('Rapport préparatoire généré, sans estimation de gains.');});
+form.addEventListener('input',()=>{report.hidden=true;});
+document.querySelector('#save').onclick=()=>{try{localStorage.setItem(key,JSON.stringify(data()));say('Configuration sauvegardée dans ce navigateur.');}catch{say('Stockage indisponible : utilise l’export JSON.');}};
+document.querySelector('#export').onclick=()=>{const blob=new Blob([JSON.stringify({schemaVersion:1,exportedAt:new Date().toISOString(),configuration:data()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pc-grapist.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);say('Export demandé au navigateur.');};
+document.querySelector('#clear').onclick=()=>{if(!confirm('Effacer la saisie et la sauvegarde locale ?'))return;form.reset();report.hidden=true;try{localStorage.removeItem(key);say('Saisie et sauvegarde effacées.');}catch{say('Saisie effacée ; stockage inaccessible.');}};
+try{const raw=localStorage.getItem(key);if(raw){const saved=JSON.parse(raw);if(saved&&typeof saved==='object'&&!Array.isArray(saved)){for(const field of form.elements){if(field.name&&Object.hasOwn(saved,field.name)&&typeof saved[field.name]==='string')field.value=saved[field.name];}say('Sauvegarde locale restaurée.');}}}catch{say('Sauvegarde indisponible ou illisible.');}
+</script>
+</html>
