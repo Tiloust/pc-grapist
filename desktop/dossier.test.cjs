@@ -1,0 +1,10 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {advise,buildDossier}=require('./advisor.js');
+const context={genre:'aaa',problem:'fps',inGame:true,capped:false,target:120,observed:60,budget:300,manualHardware:{psu:'',case:''}};
+const samples=Array.from({length:12},(_,i)=>({at:i*3000,ramUsedPercent:40,threadMaxPercent:95,gpus:[{index:'0',name:'Test',loadPercent:50}]}));
+test('dossier sans inventaire explicite',()=>{const d=buildDossier(context,[],null);assert.equal(d.schemaVersion,2);assert.equal(d.inventory,null);assert.equal(d.canValidatePurchase,false);assert.equal(d.coverage.find(x=>x.item==='Modele CPU').state,'missing');});
+test('materiel detecte separe des declarations',()=>{const inv={cpu:[{Name:'CPU Test'}],gpu:[{Name:'GPU Test'}]};const d=buildDossier({...context,manualHardware:{psu:'Modele declare',case:''}},samples,inv);assert.equal(d.inventory,inv);assert.equal(d.coverage.find(x=>x.item==='Alimentation').state,'declared');assert(d.advice.some(x=>x.detail.includes('CPU Test')));});
+test('CPU et GPU doivent coincider',()=>{const divergent=samples.map((s,i)=>({...s,threadMaxPercent:i<9?95:20,gpus:[{index:'0',name:'Test',loadPercent:i>=3?50:99}]}));assert(!advise(context,divergent).some(x=>x.title.includes('Processeur / logiciel')));assert(advise(context,samples).some(x=>x.title.includes('Processeur / logiciel')));});
+test('couverture insuffisante bloque une piste GPU',()=>{const sparse=Array.from({length:30},(_,i)=>({at:i*3000,gpus:i<10?[{index:'0',name:'Test',loadPercent:99}]:[]}));assert(!advise(context,sparse).some(x=>x.title.includes('candidate')));});
+test('zero n’est pas une mesure absente',()=>{const idle=samples.map(s=>({...s,ramUsedPercent:0,threadMaxPercent:0,gpus:[{index:'0',name:'Test',loadPercent:0}]}));assert(!advise(context,idle).some(x=>x.title.includes('candidate')||x.title.includes('Processeur / logiciel')||x.title.includes('Memoire :')));});
